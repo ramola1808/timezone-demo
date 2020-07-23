@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	
+	<http:listener-config name="httpListenerConfig" doc:name="HTTP Listener config" doc:id="659bd223-8ea2-4fdb-a9e9-7f6f23672386" >
+		<http:listener-connection host="0.0.0.0" port="8061" />
+	</http:listener-config>
+	
+	<http:request-config name="openWeatherHttpRequestConf" doc:name="openWeatherHttpRequestConf" doc:id="12ec7344-f5a7-4908-a372-e1ceb09cfac9">
+		<http:request-connection host="api.openweathermap.org"/>
+	</http:request-config>
+	
+	<flow name="checkFlow" doc:id="4405b0b9-6ac4-400b-b5f8-59f766775988" >
+		
+		<http:listener doc:name="HTTP Listener" doc:id="a7f6e8d8-ab1b-4b70-a02f-9cc079bd7a2b" config-ref="httpListenerConfig" path="/test"/>
+		
+		<logger level="INFO" doc:name="Logger" doc:id="2482bae0-c044-4e94-8d53-a33e16d9f9d1" message="Logger after HTTP Listener"/>
+		<http:request method="GET" doc:name="HTTP Requester" doc:id="a1b98d57-bc14-4d25-ae9e-e0bb44d1195b" config-ref="openWeatherHttpRequestConf" path="/data/2.5/weather">
+				<http:query-params><![CDATA[#[output application/java
+					---
+					{
+						"q": 	"Melbourne",
+						"appid": "8b3c0e3fdfbff351b24a546538486bf5"
+					}]]]>
+				</http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="754349a9-ef04-4579-b2b7-c0446ed7c8c0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+//var timeZone = java!com::utility::TimeZoneUtil::getTimeZone(payload.coord.lat as Number, payload.coord.lon as Number)
+
+//var timeZone = "America/New_York"
+//var inputDate = now() 
+
+---
+{
+	//"timeZone": timeZone,
+	inputDate: now()
+	//now: now() as String {format: "zz"}
+	//"offSet": inputDate >> timeZone
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		
+		<!-- <scatter-gather doc:name="Scatter-Gather" doc:id="9d534814-7d71-4a72-8e4b-a587c3ae306c" >
+			<route >
+				<ee:transform doc:name="Transform Message" doc:id="477026e4-be14-405f-9168-0da6f7bf2275">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+-&#45;&#45;
+{
+	"result": "This is the result from Route 1."
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</route>
+			
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="81751a53-bdfb-4e0e-81ff-7e607a6a15b6" message="This is the result from Route 2."/>
+			</route>
+			
+			<route >
+				<set-payload value="This is the result from Route 3." doc:name="Set Payload" doc:id="5498f59b-36a3-43b0-ad07-5de860bc2a33" />
+			</route>
+			
+			<route>
+				<http:request method="GET"
+					doc:name="httpRequestConfig"
+					doc:id="488a9cc0-5a3e-4440-9f56-77320a06783d"
+					config-ref="httpRequestConf" path="/data/2.5/weather">
+				<http:query-params><![CDATA[#[output application/java
+					-&#45;&#45;
+					{
+						"q": 	"Sydney",
+						"appid": "8b3c0e3fdfbff351b24a546538486bf5"
+					}]]]>
+				</http:query-params>
+				</http:request>
+			</route>
+			
+			
+		</scatter-gather> -->
+		<!-- <ee:transform doc:name="Transform Message" doc:id="1104b8da-d1d7-4155-949d-80195e8b3b42" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+-&#45;&#45;
+payload..payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform> -->
+	</flow>
+</mule>
